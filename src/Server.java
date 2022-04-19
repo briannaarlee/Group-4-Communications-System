@@ -151,66 +151,75 @@ class Server {
 					// This is where the Server takes Messages from the Clients and decides what to do based on the Message's type
 					while (true) {
 						messageFromClient = (Message) objectInputStream.readObject();
+						messageFromClient.setSender(localUser);
 						
 						switch (messageFromClient.getType()) {
-			            case "CHATROOM": /* 
+			            case "CHATROOM": 
 			            				    for (int i = 0; i < allChatRooms.size(); i++) {
-			            	                    if (allChatRooms.get(i).getRoomName().equals(localUser.getActiveChatRoom()) {
+			            	                    if (allChatRooms.get(i).getRoomName().equals(localUser.getActiveChatRoom())) {
 			            						    messageFromClient.setText(localUser.getName() + ": " + messageFromClient.getText());
 			            	                        allChatRooms.get(i).sendMessage(messageFromClient);
-			            							Message sendReceipt = new Message(status = VERIFIED);
+			            							// Message sendReceipt = new Message(status = VERIFIED);
 			            							objectOutputStream.writeObject(sendReceipt);
+												}
+												else {
+													messageFromClient.setStatus("FAILED");
+													messageFromClient.setText(messageFromClient.getText() + " not found.");
+													objectOutputStream.writeObject(messageFromClient);
+												}
+											}
 			            	             
-			            	             
-			            					*/
-			            					System.out.println("TYPE: CHATROOM");
+			            		
 			            					break;
 			            					
-			            case "DISPLAYCHATROOMS": /*
+			            case "DISPLAYCHATROOMS": 
 			            						   String[] roomNames = new String[allChatRooms.size()]
 			            	                       for (int i = 0; i < allChatRooms.size(); i++) {
 			            	                           roomNames[i] = allChatRooms.get(i).getRoomName();
 			            	                       }
-			            	                       MessageFromUser.setRoomList(roomNames)
+			            	                       MessageFromUser.setRoomList(roomNames);
 			            	                       objectOutputStream.writeObject(messageFromClient);
-			            	                       
-			            	                      
-			            	                    */
-			            						  System.out.println("TYPE: DISPLAYCHATROOM");
+
 		                     				      break;
-			            case "JOINCHATROOM": /*
+			            case "JOINCHATROOM": 
 			            					 for (int i = 0; i < allChatRooms.size(); i++) {
   	                                              if (allChatRooms.get(i).getRoomName().equals(messageFromClient.getText())) {
-  	                                                  localUser.setActiveChannel(messageFromClient.getText());
+  	                                                  localUser.setActiveChatRoom(messageFromClient.getText());
 			            					          allChatRooms.get(i).addUser(localUser);
 			            				     		  messageFromClient.setStatus("VERIFIED");
 			            				     		  objectOutputStream.writeObject(messageFromClient);
-			            				     		  
-			            					*/
-			            	                System.out.println("TYPE: JOINCHATROOM");
+													}
+												} 
+			            					
+			            	   
 		                     				break;
-			            case "CREATECHATROOM":  /*
+			            case "CREATECHATROOM":  
 			            						  String roomName = messageFromClient.getText();
 			            						  for (int i = 0; i < allChatRooms.size(); i++) {
   	                                                  if (allChatRooms.get(i).getRoomName().equals(messageFromClient.getText())) {
-  	                                                      messageFromClient.setStatus("FAILED");    
-  	                                                      return;               
-  	                                                  }
+  	                                                      messageFromClient.setStatus("FAILED");  
+														  messageFromClient.setStatus("Name unavailable"); 
+														  objectOutputStream.writeObject(messageFromClient);
+
+														  break;
+														}
+													}
+              
+  	                                                  
   	                                              // If we are here, the name is free to be used
                         
-			            						  allChatRooms.add(new ChatRoom(localUser, messageFromClient);
-			            						  Message sendReceipt = new Message(status = VERIFIED);
+			            						  allChatRooms.add(new ChatRoom(localUser, messageFromClient));
+												  localUser.setActiveChatRoom(messageFromClient.getText());
+			            						  //Message sendReceipt = new Message(status = VERIFIED);
 			            						  objectOutputStream.writeObject(sendReceipt);
 			            						  
-			            
-			            */
-			            	 System.out.println("TYPE: CREATECHATROOM");
 		                     break;
-			            case "CHANGEPASSWORD":  // localUser.changePassword(messageFromClient.getText());
-			            		                // Probably want to send confirmation back
-			            	 System.out.println("TYPE: CHANGEPASSWORD");
+
+			            case "CHANGEPASSWORD":   localUser.changePassword(messageFromClient.getText());
+			            		                // HOW DO WE LOG THIS???
 		                     break;
-			            case "CREATEUSER":  /*
+
+			            case "CREATEUSER":   /*
 			            				   if (!localUser instanceof Supervisor) {
 			            				       messageFromClient.setStatus("FAILED");
 			                                   messageFromClient.setText("You are not a Supervisor.");
@@ -219,6 +228,7 @@ class Server {
 			                                   return;
 			            				   }
 			            				   
+										   
 			                               for (int i = 0; i < allUsers.size(); i++) {
 			                                   if (allUsers.getName().equals(the name from the message)) {
 			                                       messageFromClient.setStatus("FAILED");
@@ -235,13 +245,10 @@ class Server {
 			                               
 			                               // Write the User to the file now
 										   saveNewUser( CONTENT OF THE NEW USER)
-
-			                               return;
+*/
+			                  
 			                               
-			            
-			           
-			            */
-			            	 System.out.println("TYPE: CREATEUSER");
+			
 		                     break;
 			            case "CREATESUPERVISOR":  /*
 			            					   if (!localUser instanceOf Supervisor) {
@@ -272,10 +279,9 @@ class Server {
 			            				  // Should we write this User to the file now?
 										  saveUser(newUser);
 			            */
-			            	 System.out.println("TYPE: CREATESUPERVISOR");
 		                     break;
 		                     
-			            case "DISPLAYUSERS":  /*
+			            case "DISPLAYUSERS":  
 			            					   String listOfUsers = "";
 			            				       for (int i = 0; i < allUsers.size(); i++) {
 			                                       listOfUsers += allUsers.get(i).getName() + "\n";
@@ -287,8 +293,7 @@ class Server {
 			            
 			            
 			            
-			            */
-			            	 System.out.println("TYPE: DISPLAYUSERS");
+			            
 		                     break;
 			            case "REMOVECHATUSER":  /*
 			            				         String userToRemove = messageFromClient.getText();
@@ -299,8 +304,7 @@ class Server {
   	                                                  }
 			            					   
 				            
-					            */
-								System.out.println("TYPE: REMOVECHATUSER");						
+					            */					
 								break;
 			            case "LOCKCHAT":  /*
    				                            String userToRemove = messageFromClient.getText();
@@ -314,7 +318,7 @@ class Server {
            */
 		  					System.out.println("TYPE: LOCKCHAT");
 			            	break;
-			            case "UNLOCKCHAT":  /*
+			            case "UNLOCKCHAT":  
 					   				         String userToRemove = messageFromClient.getText();
 					   						  for (int i = 0; i < allChatRooms.size(); i++) {
 					                              if (allChatRooms.get(i).getRoomName().equals(localUser.getActiveChatRoom())) {
@@ -323,7 +327,7 @@ class Server {
 					                          }
    					   
        
-           */
+           
 			            case "RETRIEVELOGS ":  /*
 			            
 			            */
@@ -371,13 +375,18 @@ class Server {
 		}
 
 		public void saveUser(User newUser) {
-			FileWriter writer = new FileWriter("src\\fileio\\users", true);
+			try {
+				FileWriter writer = new FileWriter("src\\fileio\\users", true);
 			
 			writer.write("\nU/");
 			writer.write( newUser.getName() + "/");
 			writer.write(newUser.getPassword());
 			
 			writer.close();
+			}
+			catch (IOException e) {
+				e.printStackTrace();
+			}
 			return;
 		}
 
