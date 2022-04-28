@@ -4,7 +4,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.JButton;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
@@ -14,6 +13,7 @@ public class HomePanel extends JPanel {
 
 	private JTextArea displayTA;
 	private ClientGUI gui;
+	private JTextField messageTF;
 
 	// Constructor
 	public HomePanel(ClientGUI gui) {
@@ -27,31 +27,6 @@ public class HomePanel extends JPanel {
 		JPanel center = createCenterPanel();
 		add(center, BorderLayout.CENTER);
 
-		JPanel south = createSouthPanel();
-		add(south, BorderLayout.SOUTH);
-
-	}
-
-	private JPanel createSouthPanel() {
-		JPanel south = new JPanel();
-
-		JTextField messageTF = new JTextField(25);
-		JButton sendB = new JButton("Send");
-
-		south.add(new JLabel("Enter Message: "));
-		south.add(messageTF);
-		south.add(sendB);
-
-		sendB.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				// TODO PENDING
-
-			}
-		});
-
-		return south;
 	}
 
 	private JPanel createCenterPanel() {
@@ -81,22 +56,13 @@ public class HomePanel extends JPanel {
 		JButton joinRoomB = new JButton("Join Chat Room");
 		west.add(joinRoomB);
 		joinRoomB.addActionListener(new ActionListener() {
-			
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				String roomName = JOptionPane.showInputDialog("Enter chat room name: ");
 				gui.joinChatRoom(roomName);
 			}
 		});
-
-		JButton leaveRoomB = new JButton("Leave Chat Room");
-		west.add(leaveRoomB);
-
-		JButton lockRoomB = new JButton("Lock Chat Room");
-		west.add(lockRoomB);
-
-		JButton unlockRoomB = new JButton("Unlock Chat Room");
-		west.add(unlockRoomB);
 
 		JButton changePasswordB = new JButton("Change Password");
 		west.add(changePasswordB);
