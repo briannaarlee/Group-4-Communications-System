@@ -15,6 +15,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 
 public class ClientGUI extends JFrame {
 
@@ -26,12 +27,15 @@ public class ClientGUI extends JFrame {
 	private String currentUser;
 	private HomePanel homePanel;
 	private String currentRoom;
+	private ChatRoomPanel chatRoomPanel;
 
 	// Constructor.
 	public ClientGUI() {
 
+		// Establish connection to server
 		connectToServer();
 
+		// build GUI
 		JPanel p = createLoginPanel();
 		getContentPane().add(p);
 	}
@@ -54,10 +58,11 @@ public class ClientGUI extends JFrame {
 
 		} catch (IOException e) {
 			e.printStackTrace();
+			JOptionPane.showMessageDialog(this, "Error occurred.");
 		}
 	}
 
-	private void sendMessage(String type, String text) {
+	public void sendMessage(String type, String text) {
 
 		Message loginMessage = new Message(type, text);
 		// Write - SEND the message Object to the server.
@@ -65,6 +70,7 @@ public class ClientGUI extends JFrame {
 			objectOutputStream.writeObject(loginMessage);
 		} catch (IOException e) {
 			e.printStackTrace();
+			JOptionPane.showMessageDialog(this, "Error occurred.");
 		}
 
 	}
@@ -113,9 +119,6 @@ public class ClientGUI extends JFrame {
 			// Check if the status is 'successful login'
 			if (loginMessage.getStatus().equals("VERIFIED")) {
 				// login success
-				// Create parallel process (thread) to read/receive message from server.
-//				ReceiveMessages inputThread = new ReceiveMessages(socket, objectInputStream);
-//				new Thread(inputThread).start();		
 				authenticated = true;
 				currentUser = username;
 				displayHomeScreen();
@@ -125,34 +128,64 @@ public class ClientGUI extends JFrame {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			JOptionPane.showMessageDialog(this, "Error occurred.");
 		}
 
 	}
 
-	private void displayHomeScreen() {
+	public void displayHomeScreen() {
 		// remove old items
 		getContentPane().removeAll();
 
+		if (homePanel == null) {
+			// create home panel
+			homePanel = new HomePanel(this);
+			// set display text
+			homePanel.display("Login success!");
+			homePanel.displayLine();
+		} else {
+			// set display text
+			homePanel.display("Left chat room: " + currentRoom);
+			homePanel.displayLine();
+			currentRoom = null;
+		}
 		// add home panel
-		homePanel = new HomePanel(this);
 		getContentPane().add(homePanel);
 
 		setTitle("Chat Room: " + currentUser);
 		// refresh frame so that the new changes take effect.
 		revalidate();
 
-		// set display text
-		homePanel.display("Login success!");
-		homePanel.displayLine();
+	}
+
+	private void displayChatRoomScreen() {
+		// remove old items
+		getContentPane().removeAll();
+
+		// add chat room panel
+		chatRoomPanel = new ChatRoomPanel(this, socket, objectInputStream, currentUser, currentRoom);
+		getContentPane().add(chatRoomPanel);
+
+		setTitle("Current User: " + currentUser + " | " + "Chat Room: " + currentRoom);
+		// refresh frame so that the new changes take effect.
+		revalidate();
 
 	}
 
 	public static void main(String[] args) {
-		ClientGUI gui = new ClientGUI();
-		gui.setSize(800, 500); // setting x and y dim of frame
-		gui.setTitle("Chat Room - Login");
-		gui.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // exit button to close app
-		gui.setVisible(true);
+		SwingUtilities.invokeLater(new Runnable() {
+			
+			@Override
+			public void run() {
+				ClientGUI gui = new ClientGUI();
+				gui.setSize(800, 500); // setting x and y dim of frame
+				gui.setTitle("Chat Room - Login");
+				gui.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // exit button to close app
+				gui.setVisible(true);
+				
+			}
+		});
+		
 	}
 
 	public void createChatRoom(String roomName) {
@@ -166,6 +199,8 @@ public class ClientGUI extends JFrame {
 				homePanel.display("CREATED Chat Room: " + roomName);
 				homePanel.displayLine();
 
+				displayChatRoomScreen();
+
 			} else {
 				homePanel.display("FAILED to Create Chat Room: " + roomName);
 				homePanel.display("Reason: " + replyMessage.getText());
@@ -174,6 +209,7 @@ public class ClientGUI extends JFrame {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			JOptionPane.showMessageDialog(this, "Error occurred.");
 		}
 
 	}
@@ -189,9 +225,9 @@ public class ClientGUI extends JFrame {
 		try {
 			Message replyMessage = (Message) objectInputStream.readObject();
 			if ("VERIFIED".equals(replyMessage.getStatus())) {
-				homePanel.display("JOINED Chat Room: " + roomName);
-				homePanel.displayLine();
+				currentRoom = roomName;
 
+				displayChatRoomScreen();
 			} else {
 				homePanel.display("FAILED to Join Chat Room: " + roomName);
 				homePanel.display("Reason: " + replyMessage.getText());
@@ -200,8 +236,103 @@ public class ClientGUI extends JFrame {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			JOptionPane.showMessageDialog(this, "Error occurred.");
 		}
 
+	}
+
+	public String leaveChatRoom() {
+
+		sendMessage("LEAVECHATROOM", currentRoom);
+
+		try {
+			Message replyMessage = (Message) objectInputStream.readObject();
+			if ("VERIFIED".equals(replyMessage.getStatus())) {
+				homePanel.display("LEFT Chat Room: " + currentRoom);
+				homePanel.displayLine();
+				displayHomeScreen();
+				chatRoomPanel.stopReceivingMessages();
+				chatRoomPanel = null;
+				return null;
+			} else {
+				return replyMessage.getText();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(this, "Error occurred.");
+			return "Error occurred.";
+		}
+
+	}
+
+	public void sendMessageUnused(String userMessage) {
+		sendMessage("CHATROOM", userMessage);
+		homePanel.display(currentUser + " : " + userMessage);
+
+		try {
+//			Message replyMessage = (Message) objectInputStream.readObject();
+//
+////			DISABLE STATUS CHECK TEMPORARILY
+//			homePanel.display(currentUser + " : " + userMessage);
+//			if (replyMessage != null) {
+//				homePanel.display(replyMessage.getText());
+//
+//			} else {
+//				homePanel.display("replyMessage not received");
+//			}
+//			homePanel.displayLine();
+//			if ("VERIFIED".equals(replyMessage.getStatus())) {
+//
+//				homePanel.display(currentUser + " : " + userMessage);
+//				homePanel.displayLine();
+//
+//			} else {
+//				homePanel.display("FAILED to send message : " + userMessage);
+//				homePanel.display("Reason: " + replyMessage.getText());
+//				homePanel.displayLine();
+//			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(this, "Error occurred.");
+		}
+
+	}
+
+	// INNER Class that will be receiving messages from server in parallel
+	private static class ReceiveMessages implements Runnable {
+		private final Socket clientSocket;
+		private ObjectInputStream objectInputStream;
+		private ClientGUI gui;
+
+		public ReceiveMessages(Socket socket, ObjectInputStream objectInputStream, ClientGUI gui) {
+			this.clientSocket = socket;
+			this.objectInputStream = objectInputStream;
+			this.gui = gui;
+			System.out.println("Creating the receive thread...");
+
+		}
+
+		public void run() {
+			try {
+				System.out.println("TRYING");
+				Message returnedMessage;
+
+				while (true) {
+					returnedMessage = (Message) objectInputStream.readObject();
+					System.out.println(returnedMessage.getText());
+					gui.receivedMessageObjectFromServer(returnedMessage);
+
+				}
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void receivedMessageObjectFromServer(Message message) {
+		homePanel.display(message.getText());
+		homePanel.displayLine();
 	}
 
 }
